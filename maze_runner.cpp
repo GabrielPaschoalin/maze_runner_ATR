@@ -73,16 +73,16 @@ int count = 1;
 
 void print_maze_with_delay()
 {
-    usleep(10000); // Delay for 10 milliseconds (adjust as needed)
-    system("clear");
-    printf("%i %i %i\n", num_rows, num_cols, count);
-    print_maze();
-    count++;
+	usleep(10000); // Delay for 10 milliseconds (adjust as needed)
+	system("clear");
+	printf("%i %i %i\n", num_rows, num_cols, count);
+	print_maze();
+	count++;
 }
-
 
 // Função responsável pela navegação.
 // Recebe como entrada a posição initial e retorna um booleando indicando se a saída foi encontrada
+bool exitFound = false;
 
 bool walk(pos_t pos)
 {
@@ -90,59 +90,80 @@ bool walk(pos_t pos)
 	while (!valid_positions.empty())
 	{
 
-		// Marcar a posição atual com o símbolo '.'
-		maze[pos.i][pos.j] = '.';
-
+		// Marcar a posição atual com o símbolo 'o'
+		maze[pos.i][pos.j] = 'o';
 
 		// Imprime o labirinto
 		print_maze_with_delay();
 
-		pos_t next_position[4] = {
-			{pos.i, pos.j + 1},
-			{pos.i, pos.j - 1},
-			{pos.i + 1, pos.j},
-			{pos.i - 1, pos.j},
-
-		};
-
-		if (pos.i >= 0 && pos.i < num_rows)
+		if (pos.i > 0)
 		{
-			if (maze[pos.i + 1][pos.j] == 's' || maze[pos.i - 1][pos.j] == 's')
+			if (maze[pos.i - 1][pos.j] == 's')
 			{
-				return true;
-			}
-			else if (maze[pos.i + 1][pos.j] == 'x')
-			{
-				valid_positions.push(next_position[2]);
+				exitFound = true;
 			}
 			else if (maze[pos.i - 1][pos.j] == 'x')
 			{
-				valid_positions.push(next_position[3]);
+				pos_t next = {pos.i - 1, pos.j};
+				valid_positions.push(next);
 			}
 		}
-		if (pos.j >= 0 && pos.j < num_cols)
+
+		if (pos.i < num_rows - 1)
 		{
-			if (maze[pos.i][pos.j + 1] == 's' || maze[pos.i][pos.j - 1] == 's')
+			if (maze[pos.i + 1][pos.j] == 's')
 			{
-				return true;
+				exitFound = true;
 			}
-			else if (maze[pos.i][pos.j + 1] == 'x')
+			else if (maze[pos.i + 1][pos.j] == 'x')
 			{
-				valid_positions.push(next_position[0]);
-				printf("teste");
+				pos_t next = {pos.i + 1, pos.j};
+				valid_positions.push(next);
+			}
+		}
+
+		if (pos.j > 0)
+		{
+			if (maze[pos.i][pos.j - 1] == 's')
+			{
+				exitFound = true;
 			}
 			else if (maze[pos.i][pos.j - 1] == 'x')
 			{
-				valid_positions.push(next_position[1]);
+				pos_t next = {pos.i, pos.j - 1};
+				valid_positions.push(next);
 			}
+		}
+
+		if (pos.j < num_cols - 1)
+		{
+			if (maze[pos.i][pos.j+1] == 's')
+			{
+				exitFound = true;
+			}
+			else if (maze[pos.i][pos.j + 1] == 'x')
+			{
+				pos_t next = {pos.i, pos.j + 1};
+				valid_positions.push(next);
+			}
+		}
+
+		// Marcar a posição atual com o símbolo '.'
+		maze[pos.i][pos.j] = '.';
+
+		if (exitFound == true)
+		{
+			return true;
 		}
 
 		if (!valid_positions.empty())
 		{
-			pos_t next_position = valid_positions.top();
+			pos = valid_positions.top();
 			valid_positions.pop();
-			
-			pos = next_position;
+		}
+		else
+		{
+			break;
 		}
 	}
 
@@ -168,6 +189,13 @@ int main(int argc, char *argv[])
 	{
 		printf("Exit not found.\n");
 	}
+
+	for (int i = 0; i < num_rows; ++i)
+	{
+		free(maze[i]);
+	}
+
+	free(maze);
 
 	return 0;
 }
