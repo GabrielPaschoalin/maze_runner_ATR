@@ -2,6 +2,10 @@
 #include <stack>
 #include <stdlib.h>
 #include <unistd.h> // for usleep
+#include <thread>
+#include <iostream>
+
+using namespace std;
 
 // Matriz de char representando o labirinto
 char **maze; // Voce também pode representar o labirinto como um vetor de vetores de char (vector<vector<char>>)
@@ -19,7 +23,7 @@ struct pos_t
 
 // Estrutura de dados contendo as próximas
 // posicões a serem exploradas no labirinto
-std::stack<pos_t> valid_positions;
+stack<pos_t> valid_positions;
 
 // Função que le o labirinto de um arquivo texto, carrega em
 // memória e retorna a posição inicial
@@ -69,32 +73,31 @@ void print_maze()
 		printf("\n");
 	}
 }
-int count = 1;
+
+bool exitFound = false;
 
 void print_maze_with_delay()
 {
-	usleep(10000); // Delay for 10 milliseconds (adjust as needed)
-	system("clear");
-	printf("%i %i %i\n", num_rows, num_cols, count);
-	print_maze();
-	count++;
+	while (!exitFound)
+	{
+		system("clear");
+		printf("%i %i\n", num_rows, num_cols);
+		print_maze();
+		this_thread::sleep_for(chrono::milliseconds(100)); // Sleep for 500ms
+	}
 }
 
 // Função responsável pela navegação.
 // Recebe como entrada a posição initial e retorna um booleando indicando se a saída foi encontrada
-bool exitFound = false;
 
 bool walk(pos_t pos)
 {
 	// Repita até que a saída seja encontrada ou não existam mais posições não exploradas
 	while (!valid_positions.empty())
 	{
-
+		this_thread::sleep_for(chrono::milliseconds(100));
 		// Marcar a posição atual com o símbolo 'o'
 		maze[pos.i][pos.j] = 'o';
-
-		// Imprime o labirinto
-		print_maze_with_delay();
 
 		if (pos.i > 0)
 		{
@@ -137,7 +140,7 @@ bool walk(pos_t pos)
 
 		if (pos.j < num_cols - 1)
 		{
-			if (maze[pos.i][pos.j+1] == 's')
+			if (maze[pos.i][pos.j + 1] == 's')
 			{
 				exitFound = true;
 			}
@@ -156,10 +159,24 @@ bool walk(pos_t pos)
 			return true;
 		}
 
-		if (!valid_positions.empty())
+		if (valid_positions.size() == 1)
 		{
 			pos = valid_positions.top();
 			valid_positions.pop();
+		}
+		else if (valid_positions.size() == 2)
+		{
+			//Criar outra função
+			pos_t pos1 = valid_positions.top();
+			valid_positions.pop();
+			pos_t pos2 = valid_positions.top();
+			valid_positions.pop();
+
+			thread t1(walk, pos1);
+			thread t2(walk, pos2);
+
+			t1.detach();
+			t2.detach();
 		}
 		else
 		{
@@ -176,12 +193,17 @@ int main(int argc, char *argv[])
 	pos_t initial_pos = load_maze(argv[1]);
 
 	valid_positions.push(initial_pos);
-	// chamar a função de navegação
-	bool exit_found = walk(initial_pos);
 
+	thread print(print_maze_with_delay);
+
+	// chamar a função de navegação
+	thread exit(walk, initial_pos);
+
+	print.join();
+	exit.join();
 	// Tratar o retorno (imprimir mensagem)
 
-	if (exit_found)
+	if (exitFound)
 	{
 		printf("Exit found!\n");
 	}
